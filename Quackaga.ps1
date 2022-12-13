@@ -29,6 +29,8 @@ $global:scale = 5
 
 function Start-Game{
 
+    Clear-Host
+
     # First we need to create the 2d Array of the size that we want
     # Then populate it with all of the default empty values
     $game_frame = New-GameFrame $game_frame_height $frame_width
@@ -46,7 +48,7 @@ function Start-Game{
 
     # Start the game loop
     Start-Loop $game_frame $ship_frame
-    Write-Score
+    Show-GameOver
 }
 
 function Show-Logo{
@@ -121,7 +123,7 @@ function Update-Game([array]$game_frame){
             if( $pixel_value -eq $global:alien){
                 $game_frame = Update-Alien $game_frame $row $column
             }elseif ($pixel_value -eq $global:hit){
-                $game_frame = Clear-Hit $game_frame $row $column
+                $game_frame = Clear-Pixel $game_frame $row $column
             }
         }   
     }
@@ -161,6 +163,7 @@ function Update-Alien([array]$game_frame, [int]$row, [int]$column){
         $global:game_over = $true
         $game_frame = Move-Alien $game_frame $row $column
     } elseif ($game_frame[$row+1][$column] -eq $global:shot){
+        # $game_frame = Clear-Pixel $game_frame $row $column
         $game_frame = Update-Hit $game_frame $row $column
     } else {
         $game_frame = Move-Alien $game_frame $row $column
@@ -185,6 +188,7 @@ function Update-Shot([array]$game_frame, [int]$row, [int]$column) {
     if($row -eq 0){
         $game_frame[$row][$column] = $global:empty_space
     } elseif($game_frame[$row-1][$column] -eq $global:alien) {
+        # $game_frame = Clear-Pixel $game_frame $row $column
         $game_frame = Update-Hit $game_frame $row $column
     } else {
         $game_frame = Move-Shot $game_frame $row $column
@@ -199,6 +203,7 @@ function Move-Shot([array]$game_frame, [int]$row, [int]$column) {
 }
 
 function Add-Shot([array]$game_frame, [int]$column){
+    $global:num_shots++
     $game_frame[$global:game_frame_height-1][$column] = $global:shot
     return $game_frame
 }
@@ -218,7 +223,7 @@ function Add-Hit([array]$game_frame, [int]$row, [int]$column) {
     return $game_frame
 }
 
-function Clear-Hit([array]$game_frame, [int]$row, [int]$column) {
+function Clear-Pixel([array]$game_frame, [int]$row, [int]$column) {
     $game_frame[$row][$column] = $global:empty_space
     return $game_frame
 }
@@ -336,7 +341,8 @@ function Write-GameTranslationFrame([array]$game_frame, [array]$ship_frame){
     Show-TranslationFrame $game_translation_frame
 
     # We now need display the ship
-    Write-ShipTranslationFrame([array]$ship_frame)
+    Write-ShipTranslationFrame($ship_frame)
+    Write-CurrentScore
 
 }
 
@@ -385,10 +391,30 @@ function Show-TranslationFrame ([array]$translation_frame) {
     $bottom_border = " _" * ($global:frame_width * $global:scale)
     Write-Host $top_border -NoNewline 
     Write-Host " |||"
+    
 }
 
-function Write-Score{
-    # return $game_frame
+function Write-CurrentScore{
+    $aliens_left_to_kill = $global:aliens_left_to_kill
+    $num_shots = $global:num_shots
+    Write-Host "Aliens left to kill: $aliens_left_to_kill   " -NoNewline
+    Write-Host "Shots Fired: $num_shots"
+}
+
+function Show-GameOver{
+    Clear-Host
+    Show-Logo
+    $aliens_left_to_kill = $global:aliens_left_to_kill
+    $num_shots = $global:num_shots
+    $score = $global:score
+    if($global:aliens_left_to_kill -gt 0){
+        Write-Host "GAME OVER  - DEFEAT!"
+    } else {
+        Write-Host "GAME OVER  - VICTORY!"
+    }
+    Write-Host "Aliens left to kill: $aliens_left_to_kill    " -NoNewline
+    Write-Host "Shots Fired: $num_shots     " -NoNewline
+    Write-Host "Your Score: $score"
 }
 
 Start-Game
