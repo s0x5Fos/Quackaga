@@ -283,6 +283,7 @@ function Write-ShipFrame([array]$ship_frame){
 
 function Write-TranslationFrame([array]$game_frame, [array]$ship_frame){
     Write-Host "Some Output"
+    Write-Host "More Output"
 }
 
 function Write-Score{
