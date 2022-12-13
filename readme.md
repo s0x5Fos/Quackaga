@@ -6,5 +6,4 @@ To run the game simply type
 ## Things that Still need to be fixed
 
 1. Hit Update Logic is wonky
-2. Start Screen, and Game Over screen
-3. Ship translation frame
+2. Game Over screen

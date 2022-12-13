@@ -16,16 +16,12 @@ $global:shot = 2
 $global:empty_space = 0
 $global:ship = 3
 $global:hit = 4
-$global:alien_string = "A"
-$global:alien_pixel = @(@("A","A","A","A","A"), @("A","A","A","A","A"), @("A","A","A","A","A"), @("A","A","A","A","A"), @("A","A","A","A","A"))
-$global:shot_string = "|"
-$global:shot_pixel = @(@("|","|","|","|","|"), @("|","|","|","|","|"), @("|","|","|","|","|"), @("|","|","|","|","|"), @("|","|","|","|","|"))
-$global:empty_space_string = "_"
-$global:empty_space_pixel = @(@("_","_","_","_","_"), @("_","_","_","_","_"), @("_","_","_","_","_"), @("_","_","_","_","_"), @("_","_","_","_","_"))
-$global:ship_string = "^"
-$global:ship_pixel = @(@("^","^","^","^","^"), @("^","^","^","^","^"), @("^","^","^","^","^"), @("^","^","^","^","^"), @("^","^","^","^","^"))
-$global:hit_string = "X"
-$global:hit_pixel = @(@("X","X","X","X","X"), @("X","X","X","X","X"), @("X","X","X","X","X"), @("X","X","X","X","X"), @("X","X","X","X","X"))
+$global:alien_pixel = @(@(" "," ","|"," "," "), @(" "," ","0"," "," "), @("{","0","|","0","}"), @(" "," ","V"," "," "), @(" "," "," "," "," "))
+$global:shot_pixel = @(@(" "," "," "," "," "), @(" "," ","|"," "," "), @(" ","/","|","\"," "), @(" "," ","|"," "," "), @(" "," "," "," "," "))
+$global:empty_space_pixel = @(@(" "," "," "," "," "), @(" "," "," "," "," "), @(" "," "," "," "," "), @(" "," "," "," "," "), @(" "," "," "," "," "))
+$global:ship_pixel = @(@(" "," ","^"," "," "), @(" ","/","0","\"," "), @("/","=","0","=","\"), @("|","\","V","/","|"), @(" "," ","|"," "," "))
+$global:hit_pixel = @(@(" "," "," "," "," "), @(" ","\","|","/"," "), @("-","-","+","-","-"), @(" ","/","|","\"," "), @(" "," "," "," "," "))
+$global:logo = Get-Content .\banner.txt
 $global:game_frame_height = 6
 $global:frame_width = 5 # We want this to be odd so that the ship starts centered
 $global:scale = 5
@@ -38,12 +34,25 @@ function Start-Game{
     $game_frame = New-GameFrame $game_frame_height $frame_width
     $ship_frame = New-ShipFrame $frame_width
 
+    # Grab the Logo
+    Show-Logo
+    Write-Host "ARE YOU READY FOR QUACKAGA!!!!!"
+    $pause = Read-Host "Press Enter to continue...."
+
+    Clear-Host
+
     # Ask the user how many aliens to kill
     Set-Difficulty
 
     # Start the game loop
     Start-Loop $game_frame $ship_frame
     Write-Score
+}
+
+function Show-Logo{
+    foreach ($row in $global:logo) {
+        Write-Host $row
+    }
 }
 
 function New-GameFrame([int]$height, [int]$width) {
@@ -70,8 +79,9 @@ function New-TranslationFrame ([int]$height, [int]$width, [int]$scale) {
 
 function Set-Difficulty{
     Clear-Host
+    Show-Logo
     do{
-        $prompt = "Please enter the number of Aliens you woudl like to kill(1-9)"
+        $prompt = "Please enter the your difficult(1-9)... "
         [int]$global:aliens_left_to_spawn =  Read-Host $prompt
         if ($global:aliens_left_to_spawn -lt 1 -or $global:aliens_left_to_spawn -gt 9){
             Write-Host "Invalid Input"
@@ -82,24 +92,15 @@ function Set-Difficulty{
 
 function Start-Loop([array]$game_frame, [array]$ship_frame){
     do {
-        # Update the Frame
-        # Test frame
+
+        # Update the game frame
         $game_frame = Update-Game $game_frame
 
         # Update the ship frame
         $return_obj = Update-Ship $game_frame $ship_frame
 
-        Show-GameFrame $return_obj[0]
-        $line = "- - - - - - - - - - - -"
-        Write-Host $line
-        Show-ShipFrame $return_obj[1]
-
         $game_frame = $return_obj[0]
         $ship_frame = $return_obj[1]
-        Write-TranslationFrame $game_frame $ship_frame
-        # $global:game_over = $true
-        # $game_frame = $return_obj[0]
-        # $game_frame = $return_obj[1]
 
         $test = Read-Host "Proceed to next Frame?"
         Write-Host $test
@@ -233,6 +234,8 @@ function Update-Ship([array]$game_frame, [array]$ship_frame) {
     $spacebar = [ConsoleKey]::Spacebar
 
     do {
+        Clear-Host
+        Write-GameTranslationFrame $game_frame $ship_frame
         $key_pressed = [console]::ReadKey($false)
 
         # Need to determine current location of ship first
@@ -252,13 +255,17 @@ function Update-Ship([array]$game_frame, [array]$ship_frame) {
                 break
             }
         }
-        Write-Host "Frame post Update"
-        Show-ShipFrame $ship_frame
+        # Write-Host "Frame post Update"
+        # Show-ShipFrame $ship_frame
+
+        Clear-Host
+        Write-GameTranslationFrame $game_frame $ship_frame
+
     } until ($shot_fired)
 
 
-    Write-Host "Frame After Shot"
-    Show-ShipFrame $ship_frame 
+    # Write-Host "Frame After Shot"
+    # Show-ShipFrame $ship_frame 
 
     return @($game_frame, $ship_frame)
 }
@@ -295,16 +302,11 @@ function Show-ShipFrame([array]$ship_frame){
     Write-Host $ship_frame
 }
 #Check if Write-Pixel is needed or if update frame would replace
-function Write-TranslationFrame([array]$game_frame, [array]$ship_frame){
+function Write-GameTranslationFrame([array]$game_frame, [array]$ship_frame){
     
     # First create the translation frame
     $game_translation_frame = New-TranslationFrame $global:game_frame_height $global:frame_width $global:scale
-    $ship_translation_frame = New-TranslationFrame 1 $global:frame_width $global:scale
-
-    # Here we update the game_translation_frame to reflect the appropriate game state
-    $line = "- - - - - - -"
-    Write-host $line
-
+    
     # Depending on the value place the right pixel to the Game Translation Frame
     for ($row = 0; $row -lt $global:game_frame_height; $row++) {
         for ($column = 0; $column -lt $global:frame_width; $column++) {
@@ -330,10 +332,36 @@ function Write-TranslationFrame([array]$game_frame, [array]$ship_frame){
             }
         }
     }
+    # Display the Game Frame
     Show-TranslationFrame $game_translation_frame
+
+    # We now need display the ship
+    Write-ShipTranslationFrame([array]$ship_frame)
+
 }
+
+function Write-ShipTranslationFrame([array]$ship_frame){
+    $ship_translation_frame = New-TranslationFrame 1 $global:frame_width $global:scale
+
+    for($column = 0; $column -lt $global:frame_width; $column++){
+        $current_pixel = $ship_frame[$column]
+        switch ($current_pixel) {
+                $global:empty_space {
+                    # Passing the generated translation 2D array, with the pixel to be placed, and the index in which this pixel should start
+                    $ship_translation_frame = Update-TranslationFrame $ship_translation_frame $global:empty_space_pixel 0 $column 
+                    break
+                }
+                $global:ship {
+                    $ship_translation_frame = Update-TranslationFrame $ship_translation_frame $global:ship_pixel 0 $column
+                    break
+                }
+        }
+    }
+
+    Show-TranslationFrame $ship_translation_frame
+}
+
 function Update-TranslationFrame ([array]$translation_frame, [array]$pixel, [int]$bframe_row, [int]$bframe_column){
-    Write-Host "Updating Translation Frame"
     $row_offset = $bframe_row * $global:scale
     $column_offset = $bframe_column * $global:scale
     for ($row = 0; $row -lt $global:scale; $row++) {
@@ -344,12 +372,19 @@ function Update-TranslationFrame ([array]$translation_frame, [array]$pixel, [int
     return $translation_frame
 }
 function Show-TranslationFrame ([array]$translation_frame) {
-    Write-Host "Current Translation Frame"
+    Write-Host "|||" -NoNewline
+    $top_border = " *" * ($global:frame_width * $global:scale)
+    Write-Host $top_border -NoNewline 
+    Write-Host " |||"
     foreach ($row in $translation_frame) {
         Write-Host "||| " -NoNewline
         Write-Host $row -Separator " " -NoNewline
         Write-Host " |||"
     }
+    Write-Host "|||" -NoNewline
+    $bottom_border = " _" * ($global:frame_width * $global:scale)
+    Write-Host $top_border -NoNewline 
+    Write-Host " |||"
 }
 
 function Write-Score{
